@@ -1,0 +1,24 @@
+source "mindy_api.sh"
+
+set +x
+# Set the locations of the frame data buffers
+write_reg64 $REG_HFD00_ADDR_H 0x0_0000_0000
+write_reg64 $REG_HFD01_ADDR_H 0x1_0000_0000
+write_reg64 $REG_HFD10_ADDR_H 0x2_0000_0000
+write_reg64 $REG_HFD11_ADDR_H 0x3_0000_0000
+
+# Set the size of the frame data buffers
+write_reg64 $REG_HFD_BYTES_H 0x1_0000_0000
+
+# Set the locations of the meta-data buffers
+write_reg64 $REG_HMD0_ADDR_H 0xA_0000_0000
+write_reg64 $REG_HMD1_ADDR_H 0xB_0000_0000
+
+# Set the size of the meta-data buffers
+write_reg64 $REG_HMD_BYTES_H 512
+
+pcireg $REG_SEMIPHASE_BYTES 1024
+
+
+
+

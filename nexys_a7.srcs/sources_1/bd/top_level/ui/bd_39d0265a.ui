@@ -1,0 +1,52 @@
+{
+   "ActiveEmotionalView":"No Loops",
+   "Default View_ScaleFactor":"1.0",
+   "Default View_TopLeft":"-355,-249",
+   "DisplayTieOff":"1",
+   "ExpandedHierarchyInLayout":"",
+   "No Loops_ExpandedHierarchyInLayout":"",
+   "No Loops_Layout":"# # String gsaved with Nlview 7.0r4  2019-12-20 bk=1.5203 VDI=41 GEI=36 GUI=JA:10.0 TLS
+#  -string -flagsOSRD
+preplace port UART -pg 1 -lvl 7 -x 1540 -y 60 -defaultsOSRD
+preplace port port-id_CLK100MHZ -pg 1 -lvl 0 -x 0 -y 100 -defaultsOSRD
+preplace port port-id_CPU_RESETN -pg 1 -lvl 0 -x 0 -y 120 -defaultsOSRD
+preplace inst system_interconnect -pg 1 -lvl 3 -x 720 -y 120 -defaultsOSRD -pinDir S00_AXI left -pinY S00_AXI 0L -pinDir M00_AXI right -pinY M00_AXI 0R -pinDir M01_AXI right -pinY M01_AXI 20R -pinDir aclk left -pinY aclk 20L -pinDir aresetn left -pinY aresetn 40L
+preplace inst source_100mhz -pg 1 -lvl 1 -x 190 -y 100 -swap {0 1 2 4 3} -defaultsOSRD -pinDir CLK100MHZ left -pinY CLK100MHZ 0L -pinDir clk_100mhz right -pinY clk_100mhz 0R -pinDir CPU_RESETN left -pinY CPU_RESETN 20L -pinBusDir interconnect_aresetn right -pinBusY interconnect_aresetn 90R -pinBusDir peripheral_aresetn right -pinBusY peripheral_aresetn 20R
+preplace inst axi_uart_bridge -pg 1 -lvl 2 -x 460 -y 60 -swap {18 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 0 19 20 22 21} -defaultsOSRD -pinDir M_AXI right -pinY M_AXI 60R -pinDir UART right -pinY UART 0R -pinDir aresetn left -pinY aresetn 60L -pinDir aclk left -pinY aclk 40L
+preplace inst mindy -pg 1 -lvl 4 -x 990 -y 120 -defaultsOSRD -pinDir S_AXI_FC left -pinY S_AXI_FC 0L -pinDir M_AXI right -pinY M_AXI 10R -pinDir S_AXI_DF left -pinY S_AXI_DF 20L -pinDir clk left -pinY clk 40L -pinDir resetn left -pinY resetn 60L
+preplace inst pcie_source -pg 1 -lvl 6 -x 1420 -y 170 -defaultsOSRD -pinDir S_AXI left -pinY S_AXI 0L -pinDir clk left -pinY clk 60L -pinDir resetn left -pinY resetn 80L
+preplace inst axi_data_fifo -pg 1 -lvl 5 -x 1220 -y 130 -defaultsOSRD -pinDir S_AXI left -pinY S_AXI 0L -pinDir M_AXI right -pinY M_AXI 40R -pinDir aclk left -pinY aclk 20L -pinDir aresetn left -pinY aresetn 40L
+preplace netloc CLK100MHZ_1 1 0 1 NJ 100
+preplace netloc CPU_RESETN_1 1 0 1 NJ 120
+preplace netloc source_100mhz_interconnect_aresetn 1 1 5 NJ 190 580 240 860 250 1120 250 NJ
+preplace netloc source_100mhz_peripheral_aresetn 1 1 1 N 120
+preplace netloc system_clock_clk_100mhz 1 1 5 360 170 560 220 880 230 1100 230 NJ
+preplace netloc hier_0_M_AXI 1 2 1 N 120
+preplace netloc hier_0_UART 1 2 5 NJ 60 NJ 60 NJ 60 NJ 60 NJ
+preplace netloc system_interconnect_M00_AXI 1 3 1 N 120
+preplace netloc system_interconnect_M01_AXI 1 3 1 N 140
+preplace netloc axi_data_fifo_0_M_AXI 1 5 1 N 170
+preplace netloc mindy_M_AXI 1 4 1 N 130
+levelinfo -pg 1 0 190 460 720 990 1220 1420 1540
+pagesize -pg 1 -db -bbox -sgen -150 0 1630 310
+",
+   "No Loops_ScaleFactor":"0.740678",
+   "No Loops_TopLeft":"-142,-382",
+   "guistr":"# # String gsaved with Nlview 7.0r4  2019-12-20 bk=1.5203 VDI=41 GEI=36 GUI=JA:10.0 TLS
+#  -string -flagsOSRD
+preplace port port-id_CLK100MHZ -pg 1 -lvl 0 -x 0 -y 100 -defaultsOSRD
+preplace port port-id_CPU_RESETN -pg 1 -lvl 0 -x 0 -y 180 -defaultsOSRD
+preplace inst system_clock -pg 1 -lvl 1 -x 130 -y 100 -defaultsOSRD
+preplace inst system_reset -pg 1 -lvl 2 -x 430 -y 200 -defaultsOSRD
+preplace inst system_interconnect -pg 1 -lvl 3 -x 750 -y 90 -defaultsOSRD
+preplace netloc clk_in1_0_1 1 0 1 NJ 100
+preplace netloc system_clock_clk_100mhz 1 1 2 240 100 NJ
+preplace netloc ext_reset_in_0_1 1 0 2 NJ 180 NJ
+preplace netloc system_reset_interconnect_aresetn 1 2 1 610 120n
+levelinfo -pg 1 0 130 430 750 900
+pagesize -pg 1 -db -bbox -sgen -150 0 900 300
+"
+}
+{
+   "da_axi4_cnt":"1"
+}
