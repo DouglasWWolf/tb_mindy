@@ -35,7 +35,12 @@
     that receives this data will re-packetize it as neccessary
 */
 
-module data_fetch # (parameter PCIE_BITS = 512)
+module data_fetch #
+(
+    parameter PCIE_BITS = 512,
+    parameter FD_FIFO_DEPTH = 1024,
+    parameter FD_FIFO_TYPE = "auto"
+)
 (
     input clk, resetn,
 
@@ -146,8 +151,11 @@ module data_fetch # (parameter PCIE_BITS = 512)
     //==========================================================================
     output [PCIE_BITS-1:0] AXIS_FD_TDATA,
     output                 AXIS_FD_TVALID,
-    input                  AXIS_FD_TREADY
+    input                  AXIS_FD_TREADY,
     //==========================================================================
+
+    // The number of bytes in a full-frame
+    output reg [31:0] FRAME_SIZE
 );  
 
 // Any time the register map of this module changes, this number should
@@ -167,24 +175,24 @@ localparam AXI_BURST_SIZE = 256;
 localparam AXI_BURST_CYCLES = AXI_BURST_SIZE / PCIE_WIDTH;
 
 //=========================  AXI Register Map  ================================
-localparam REG_MODULE_REV      =  0;
-localparam REG_HFD00_ADDR_H    =  1;  // Host frame data, phase 0, semi-phase 0
-localparam REG_HFD00_ADDR_L    =  2;
-localparam REG_HFD01_ADDR_H    =  3;  // Host frame data, phase 0, semi-phase 1
-localparam REG_HFD01_ADDR_L    =  4;
-localparam REG_HFD10_ADDR_H    =  5;  // Host frame data, phase 1, semi-phase 0
-localparam REG_HFD10_ADDR_L    =  6;
-localparam REG_HFD11_ADDR_H    =  7;  // Host frame data, phase 1, semi-phase 1
-localparam REG_HFD11_ADDR_L    =  8;
-localparam REG_HMD0_ADDR_H     =  9;  // Host metadata, phase 0
-localparam REG_HMD0_ADDR_L     = 10;
-localparam REG_HMD1_ADDR_H     = 11;  // Host metadata, phase 1
-localparam REG_HMD1_ADDR_L     = 12;
-localparam REG_HFD_BYTES_H     = 13;  // Host frame-data buffer, size in bytes
-localparam REG_HFD_BYTES_L     = 14;
-localparam REG_HMD_BYTES_H     = 15;  // Host meta-data buffer, size in bytes
-localparam REG_HMD_BYTES_L     = 16;
-localparam REG_SEMIPHASE_BYTES = 17;  // # of bytes in a semiphase
+localparam REG_MODULE_REV   =  0;
+localparam REG_HFD00_ADDR_H =  1;  // Host frame data, phase 0, semi-phase 0
+localparam REG_HFD00_ADDR_L =  2;
+localparam REG_HFD01_ADDR_H =  3;  // Host frame data, phase 0, semi-phase 1
+localparam REG_HFD01_ADDR_L =  4;
+localparam REG_HFD10_ADDR_H =  5;  // Host frame data, phase 1, semi-phase 0
+localparam REG_HFD10_ADDR_L =  6;
+localparam REG_HFD11_ADDR_H =  7;  // Host frame data, phase 1, semi-phase 1
+localparam REG_HFD11_ADDR_L =  8;
+localparam REG_HMD0_ADDR_H  =  9;  // Host metadata, phase 0
+localparam REG_HMD0_ADDR_L  = 10;
+localparam REG_HMD1_ADDR_H  = 11;  // Host metadata, phase 1
+localparam REG_HMD1_ADDR_L  = 12;
+localparam REG_HFD_BYTES_H  = 13;  // Host frame-data buffer, size in bytes
+localparam REG_HFD_BYTES_L  = 14;
+localparam REG_HMD_BYTES_H  = 15;  // Host meta-data buffer, size in bytes
+localparam REG_HMD_BYTES_L  = 16;
+localparam REG_FRAME_SIZE   = 17;  // # of bytes in a semiphase
 //=============================================================================
 
 
@@ -238,7 +246,7 @@ reg[63:0] host_fd_addr[0:1][0:1], host_fd_bytes;
 reg[63:0] host_md_addr[0:1], host_md_bytes;
 
 // Number of bytes in a semi-phase
-reg[31:0] semiphase_bytes;
+wire[31:0] semiphase_bytes = FRAME_SIZE / 2;
 
 // Determine which phase (0 or 1) we are issuing read requests for
 reg phase_select_reg;
@@ -508,8 +516,8 @@ always @(posedge clk) begin
                     REG_HMD_BYTES_H:    host_md_bytes[63:32] <= ashi_wdata;
                     REG_HMD_BYTES_L:    host_md_bytes[31:00] <= ashi_wdata;
 
-                    // Length of a semiphase, in bytes
-                    REG_SEMIPHASE_BYTES: semiphase_bytes <= ashi_wdata;
+                    // Length of a frame (i.e., 2 semiphases), in bytes
+                    REG_FRAME_SIZE:     FRAME_SIZE <= ashi_wdata;
 
                     // Writes to any other register are a decode-error
                     default: ashi_wresp <= DECERR;
@@ -564,7 +572,7 @@ always @(posedge clk) begin
             REG_HMD_BYTES_H:    ashi_rdata <= host_md_bytes[63:32];
             REG_HMD_BYTES_L:    ashi_rdata <= host_md_bytes[31:00];
 
-            REG_SEMIPHASE_BYTES: ashi_rdata <= semiphase_bytes;
+            REG_FRAME_SIZE:     ashi_rdata <= FRAME_SIZE;
 
             // Reads of any other register are a decode-error
             default: ashi_rresp <= DECERR;
@@ -638,7 +646,7 @@ xpm_fifo_axis #
     .FIFO_DEPTH         (16),
     .TDATA_WIDTH        (PCIE_BITS),
     .TUSER_WIDTH        (1),
-    .FIFO_MEMORY_TYPE   ("auto"),
+    .FIFO_MEMORY_TYPE   ("distributed"),
     .USE_ADV_FEATURES   ("0000")
 )
 md0_fifo
@@ -660,7 +668,7 @@ md0_fifo
     // The output bus of the FIFO
    .m_axis_tdata    (AXIS_MD0_TDATA ),
    .m_axis_tvalid   (AXIS_MD0_TVALID),
-   .m_axis_tready   (1 /*AXIS_MD0_TREADY */),
+   .m_axis_tready   (AXIS_MD0_TREADY),
    .m_axis_tuser    (               ),
    .m_axis_tkeep    (               ),
    .m_axis_tlast    (               ),
@@ -700,7 +708,7 @@ xpm_fifo_axis #
     .FIFO_DEPTH         (16),
     .TDATA_WIDTH        (PCIE_BITS),
     .TUSER_WIDTH        (1),
-    .FIFO_MEMORY_TYPE   ("auto"),
+    .FIFO_MEMORY_TYPE   ("distributed"),
     .USE_ADV_FEATURES   ("0000")
 )
 md1_fifo
@@ -722,7 +730,7 @@ md1_fifo
     // The output bus of the FIFO
    .m_axis_tdata    (AXIS_MD1_TDATA ),
    .m_axis_tvalid   (AXIS_MD1_TVALID),
-   .m_axis_tready   (1 /*AXIS_MD1_TREADY */),
+   .m_axis_tready   (AXIS_MD1_TREADY),
    .m_axis_tuser    (               ),
    .m_axis_tkeep    (               ),
    .m_axis_tlast    (               ),
@@ -751,7 +759,7 @@ md1_fifo
 );
 //=============================================================================
 
-
+ 
 //=============================================================================
 // This FIFO holds outgoing frame data
 //=============================================================================
@@ -759,10 +767,10 @@ xpm_fifo_axis #
 (
     .CLOCKING_MODE      ("common_clock"),
     .PACKET_FIFO        ("false"),
-    .FIFO_DEPTH         (1024),
+    .FIFO_DEPTH         (FD_FIFO_DEPTH),
     .TDATA_WIDTH        (PCIE_BITS),
     .TUSER_WIDTH        (1),
-    .FIFO_MEMORY_TYPE   ("auto"),
+    .FIFO_MEMORY_TYPE   (FD_FIFO_TYPE),
     .USE_ADV_FEATURES   ("0000")
 )
 fd_fifo
@@ -784,10 +792,10 @@ fd_fifo
     // The output bus of the FIFO
    .m_axis_tdata    (AXIS_FD_TDATA ),
    .m_axis_tvalid   (AXIS_FD_TVALID),
-   .m_axis_tready   (1 /*AXIS_FD_TREADY */),
-   .m_axis_tuser    (               ),
-   .m_axis_tkeep    (               ),
-   .m_axis_tlast    (               ),
+   .m_axis_tready   (AXIS_FD_TREADY),
+   .m_axis_tuser    (              ),
+   .m_axis_tkeep    (              ),
+   .m_axis_tlast    (              ),
 
     // Unused input stream signals
    .s_axis_tdest(),

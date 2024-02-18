@@ -58,12 +58,13 @@ module pcie_source
 );
 
 reg[31:0] delay;
-reg[63:0] araddr;
 reg[ 7:0] arlen;
 reg[ 3:0] fsm_state;
 
 assign S_AXI_RLAST = S_AXI_RVALID & (arlen == 0);
 assign S_AXI_RRESP = 0;
+
+
 
 always @(posedge clk) begin
     
@@ -75,29 +76,23 @@ always @(posedge clk) begin
         S_AXI_RVALID  <= 0;
     end else case(fsm_state)
 
-        0:   begin
+        0:  begin
                 S_AXI_ARREADY <= 1;
                 fsm_state     <= fsm_state + 1;
             end
 
         1:  if (S_AXI_ARREADY & S_AXI_ARVALID) begin
-                araddr        <= S_AXI_ARADDR;
                 arlen         <= S_AXI_ARLEN;
                 S_AXI_ARREADY <= 0;
-                delay         <= 0;
+                S_AXI_RDATA   <= S_AXI_ARADDR;
+                S_AXI_RVALID  <= 1;
                 fsm_state     <= fsm_state + 1;
             end
 
-        2:  if (delay == 0) begin
-                S_AXI_RDATA  <= araddr;
-                S_AXI_RVALID <= 1;
-                fsm_state    <= fsm_state + 1;
-            end
 
-        3:  if (S_AXI_RREADY & S_AXI_RVALID) begin
+        2:  if (S_AXI_RREADY & S_AXI_RVALID) begin
                 if (arlen) begin
-                    S_AXI_RDATA <= araddr + 64;
-                    araddr      <= araddr + 64;
+                    S_AXI_RDATA <= S_AXI_RDATA + 64;
                     arlen       <= arlen - 1;
                 end else begin
                     S_AXI_RVALID  <= 0;
@@ -108,6 +103,29 @@ always @(posedge clk) begin
 
     endcase
 end
+
+
+reg[63:0] bursts_in, bursts_ackd;
+
+assign S_AXI_AWREADY = (resetn == 1);
+assign S_AXI_WREADY  = (resetn == 1);
+
+always @(posedge clk) begin
+    if (resetn == 0)
+        bursts_in <= 0;
+    else if (S_AXI_WVALID & S_AXI_WREADY & S_AXI_WLAST)
+        bursts_in <= bursts_in + 1;
+end
+
+assign S_AXI_BVALID = (bursts_ackd < bursts_in);
+always @(posedge clk) begin
+    if (resetn == 0)
+        bursts_ackd <= 0;
+    else if (S_AXI_BVALID & S_AXI_BREADY)
+        bursts_ackd <= bursts_ackd + 1;
+end
+
+
     
 endmodule
     
