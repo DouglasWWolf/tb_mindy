@@ -37,9 +37,10 @@
 
 module data_fetch #
 (
-    parameter PCIE_BITS = 512,
-    parameter FD_FIFO_DEPTH = 1024,
-    parameter FD_FIFO_TYPE = "auto"
+    parameter PCIE_BITS      = 512,
+    parameter AXI_BURST_SIZE = 2048,
+    parameter FD_FIFO_DEPTH  = 1024,
+    parameter FD_FIFO_TYPE   = "auto"
 )
 (
     input clk, resetn,
@@ -167,9 +168,6 @@ localparam PCIE_WIDTH = PCIE_BITS / 8;
 
 // Number of bytes in a single metadata record
 localparam METADATA_BYTES = 128;
-
-// Number of bytes in an AXI packet being received from the PCIe bus
-localparam AXI_BURST_SIZE = 256;
 
 // Number of data cycles in an AXI burst
 localparam AXI_BURST_CYCLES = AXI_BURST_SIZE / PCIE_WIDTH;
